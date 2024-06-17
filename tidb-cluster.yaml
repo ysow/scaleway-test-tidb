@@ -4,6 +4,23 @@ kind: Namespace
 metadata:
   name: tidb-cluster
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tidb-secret
+  namespace: tidb-cluster
+stringData:
+  root: "ChangeMe123!"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tidb-grafana
+  namespace: tidb-cluster
+stringData:
+  grafana-user: "monit"
+  grafana-pass: "ChangeMe123!"
+---
 apiVersion: pingcap.com/v1alpha1
 kind: TidbCluster
 metadata:
@@ -193,6 +210,9 @@ metadata:
   namespace: tidb-cluster
 spec:
   replicas: 1
+  pvReclaimPolicy: Retain
+  persistent: true
+  storage: 20G
   clusters:
   - name: tidb
   prometheus:
@@ -201,6 +221,14 @@ spec:
   grafana:
     baseImage: grafana/grafana
     version: 7.5.11
+    service:
+      type: LoadBalancer
+    usernameSecret:
+      name: tidb-grafana
+      key: grafana-user
+    passwordSecret:
+      name: tidb-grafana
+      key: grafana-pass
   initializer:
     baseImage: pingcap/tidb-monitor-initializer
     version: v8.1.0
@@ -211,3 +239,36 @@ spec:
     baseImage: quay.io/prometheus-operator/prometheus-config-reloader
     version: v0.49.0
   imagePullPolicy: IfNotPresent
+---
+apiVersion: pingcap.com/v1alpha1
+kind: TidbNGMonitoring
+metadata:
+  name: tidb
+  namespace: tidb-cluster
+spec:
+  clusters:
+  - name: tidb
+  ngMonitoring:
+    requests:
+      storage: 20Gi
+    version: v8.1.0
+    baseImage: pingcap/ng-monitoring
+---
+apiVersion: pingcap.com/v1alpha1
+kind: TidbInitializer
+metadata:
+  name: tidb
+  namespace: tidb-cluster
+spec:
+  image: tnir/mysqlclient
+  imagePullPolicy: IfNotPresent
+  cluster:
+    name: tidb
+  passwordSecret: tidb-secret
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 500Mi
+    requests:
+      cpu: 100m
+      memory: 50Mi
