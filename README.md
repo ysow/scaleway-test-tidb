@@ -62,6 +62,47 @@ Root password for the database is initialized to `ChangeMe123!`
 
 Grafana user/pass is `monit` with `ChangeMe123!`
 
+Benchmark
+---------
+
+A simple benchmark can be run in the K8s cluster using provided image (see `tidb-bench` folder)
+
+```
+kubectl apply -f tidb-bench-job.yaml
+kubectl wait -n tidb-cluster --for=condition=complete --timeout=360s job/tidb-bench
+kubectl logs -n tidb-cluster --tail=26 -l=job-name=tidb-bench
+```
+
+Sample results:
+
+```
+SQL statistics:
+    queries performed:
+        read:                            0
+        write:                           273386
+        other:                           0
+        total:                           273386
+    transactions:                        273386 (911.25 per sec.)
+    queries:                             273386 (911.25 per sec.)
+    ignored errors:                      0      (0.00 per sec.)
+    reconnects:                          0      (0.00 per sec.)
+
+General statistics:
+    total time:                          300.0117s
+    total number of events:              273386
+
+Latency (ms):
+         min:                                    8.05
+         avg:                                   17.55
+         max:                                  494.11
+         95th percentile:                       23.52
+         sum:                              4798856.77
+
+Threads fairness:
+    events (avg/stddev):           17086.6250/25.93
+    execution time (avg/stddev):   299.9285/0.01
+```
+
 TODO
 ----
 
