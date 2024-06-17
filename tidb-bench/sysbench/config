@@ -1,0 +1,8 @@
+time=300
+db-driver=mysql
+mysql-host=tidb-tidb
+mysql-port=4000
+mysql-user=root
+mysql-password=ChangeMe123!
+mysql-db=test
+report-interval=10

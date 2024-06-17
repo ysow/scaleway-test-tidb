@@ -1,0 +1,14 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tidb-bench
+  namespace: tidb-cluster
+spec:
+  template:
+    spec:
+      containers:
+      - name: tidb-bench
+        image: ghcr.io/n-arno/tidb-bench:latest
+      restartPolicy: Never
+  backoffLimit: 4

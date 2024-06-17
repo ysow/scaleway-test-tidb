@@ -135,6 +135,8 @@ spec:
     replicas: 2
     separateSlowLog: true
     service:
+      annotations:
+        service.beta.kubernetes.io/scw-loadbalancer-type: "LB-GP-L"
       type: LoadBalancer
     requests:
       cpu: 1000m
@@ -212,7 +214,7 @@ spec:
   replicas: 1
   pvReclaimPolicy: Retain
   persistent: true
-  storage: 20G
+  storage: 20Gi
   clusters:
   - name: tidb
   prometheus:
