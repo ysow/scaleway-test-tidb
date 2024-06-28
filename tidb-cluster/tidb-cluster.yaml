@@ -1,0 +1,274 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tidb-cluster
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tidb-secret
+  namespace: tidb-cluster
+stringData:
+  root: "ChangeMe123!"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tidb-grafana
+  namespace: tidb-cluster
+stringData:
+  grafana-user: "monit"
+  grafana-pass: "ChangeMe123!"
+---
+apiVersion: pingcap.com/v1alpha1
+kind: TidbCluster
+metadata:
+  name: tidb
+  namespace: tidb-cluster
+spec:
+  version: v8.1.0
+  timezone: UTC
+  pvReclaimPolicy: Retain
+  enableDynamicConfiguration: true
+  configUpdateStrategy: RollingUpdate
+  discovery: {}
+  helper:
+    image: alpine:3.16.0
+  pd:
+    baseImage: pingcap/pd
+    maxFailoverCount: 0
+    replicas: 3
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+      storage: 10Gi
+    limits:
+      memory: 2Gi
+    config: |
+      [replication]
+        enable-placement-rules = true
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/component
+              operator: In
+              values:
+              - pd
+          topologyKey: kubernetes.io/hostname
+  tikv:
+    baseImage: pingcap/tikv
+    maxFailoverCount: 0
+    evictLeaderTimeout: 1m
+    replicas: 3
+    config: |
+      log-level = "info"
+    storageClassName: sbs-15k
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: k8s.scaleway.com/nodetype
+              operator: In
+              values:
+              - storage
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/component
+              operator: In
+              values:
+              - tikv
+              - tiflash
+          topologyKey: kubernetes.io/hostname
+    tolerations:
+    - key: "k8s.scaleway.com/node"
+      operator: "Equal"
+      value: "storage"
+      effect: "NoSchedule"
+    requests:
+      storage: 100Gi
+  tiflash:
+    baseImage: pingcap/tiflash
+    maxFailoverCount: 0
+    replicas: 2
+    storageClaims:
+    - resources:
+        requests:
+          storage: 100Gi
+      storageClassName: sbs-15k
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: k8s.scaleway.com/nodetype
+              operator: In
+              values:
+              - storage
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/component
+              operator: In
+              values:
+              - tiflash
+              - tikv
+          topologyKey: kubernetes.io/hostname
+    tolerations:
+    - key: "k8s.scaleway.com/node"
+      operator: "Equal"
+      value: "storage"
+      effect: "NoSchedule"
+  tidb:
+    baseImage: pingcap/tidb
+    config: |
+      [performance]
+        tcp-keep-alive = true
+    imagePullPolicy: IfNotPresent
+    maxFailoverCount: 0
+    replicas: 2
+    separateSlowLog: true
+    service:
+      type: LoadBalancer
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+    limits:
+      memory: 2Gi
+    slowLogTailer:
+      image: alpine:3.16.0
+      imagePullPolicy: IfNotPresent
+      limits:
+        cpu: 100m
+        memory: 50Mi
+      requests:
+        cpu: 20m
+        memory: 5Mi
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/component
+              operator: In
+              values:
+              - tidb
+          topologyKey: kubernetes.io/hostname
+  ticdc:
+    baseImage: pingcap/ticdc
+    replicas: 2
+    imagePullPolicy: IfNotPresent
+    config: |
+      gc-ttl = 86400
+      log-level = "info"
+      log-file = ""
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+    limits:
+      memory: 2Gi
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/component
+              operator: In
+              values:
+              - ticdc
+          topologyKey: kubernetes.io/hostname
+---
+apiVersion: pingcap.com/v1alpha1
+kind: TidbDashboard
+metadata:
+  name: tidb
+  namespace: tidb-cluster
+spec:
+  baseImage: pingcap/tidb-dashboard
+  version: latest
+  clusters:
+  - name: tidb
+  service:
+    type: LoadBalancer
+  requests:
+    cpu: 1000m
+    memory: 1Gi
+    storage: 10Gi
+  limits:
+    memory: 2Gi
+---
+apiVersion: pingcap.com/v1alpha1
+kind: TidbMonitor
+metadata:
+  name: tidb
+  namespace: tidb-cluster
+spec:
+  replicas: 1
+  pvReclaimPolicy: Retain
+  persistent: true
+  storage: 20G
+  clusters:
+  - name: tidb
+  prometheus:
+    baseImage: prom/prometheus
+    version: v2.27.1
+  grafana:
+    baseImage: grafana/grafana
+    version: 7.5.11
+    service:
+      type: LoadBalancer
+    usernameSecret:
+      name: tidb-grafana
+      key: grafana-user
+    passwordSecret:
+      name: tidb-grafana
+      key: grafana-pass
+  initializer:
+    baseImage: pingcap/tidb-monitor-initializer
+    version: v8.1.0
+  reloader:
+    baseImage: pingcap/tidb-monitor-reloader
+    version: v1.0.1
+  prometheusReloader:
+    baseImage: quay.io/prometheus-operator/prometheus-config-reloader
+    version: v0.49.0
+  imagePullPolicy: IfNotPresent
+---
+apiVersion: pingcap.com/v1alpha1
+kind: TidbNGMonitoring
+metadata:
+  name: tidb
+  namespace: tidb-cluster
+spec:
+  clusters:
+  - name: tidb
+  ngMonitoring:
+    requests:
+      storage: 20Gi
+    version: v8.1.0
+    baseImage: pingcap/ng-monitoring
+---
+apiVersion: pingcap.com/v1alpha1
+kind: TidbInitializer
+metadata:
+  name: tidb
+  namespace: tidb-cluster
+spec:
+  image: tnir/mysqlclient
+  imagePullPolicy: IfNotPresent
+  cluster:
+    name: tidb
+  passwordSecret: tidb-secret
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 500Mi
+    requests:
+      cpu: 100m
+      memory: 50Mi

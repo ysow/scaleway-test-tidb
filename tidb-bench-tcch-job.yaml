@@ -1,0 +1,15 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tidb-bench-job
+  namespace: tidb-cluster
+spec:
+  template:
+    spec:
+      containers:
+      - name: tidb-bench
+        image: ysowscw/tiup-bench:latest
+        imagePullPolicy: Always
+      restartPolicy: Never
+  backoffLimit: 4
