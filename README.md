@@ -6,12 +6,19 @@ Test of deploying TiDB on a Kapsule cluster using the TiDB operator and Scaleway
 pre-requisites
 --------------
 
-- Helm and kubectl CLI installed
-- Kapsule cluster with:
-  - Some standard nodes for traditional workloads (3 PRO2-S is ideal to handle cpu requests from TiDB/PD and TiCDC)
-  - 5 dedicated storage nodes (PRO2-XXS are enough):
-    - pool name: `storage`
-    - pool tag: `taint=node=storage:NoSchedule`
+- Helm 
+- kubectl 
+- terraform 
+- configure your scw credentials by creating access keys and adding them to a file inside named `scaleway.auto.tfvars` the terraform directory : 
+like this : 
+```
+access_key = "YOURACCESSKEY"
+secret_key = "YOURSECRETKEY"
+organization_id = "e97e853d-3cce-4ebf-acda-ec5d6abc8fa8"
+project_id = "e26f5a0d-e7eb-4f9c-891e-0d3a2b455758"
+
+```
+
 
 TiKV and TiFlash pods will be deployed on the storage nodes, with 100GiB PVC.
 
