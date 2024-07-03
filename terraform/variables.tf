@@ -29,14 +29,14 @@ variable "node_pool_name" {
 }
 
 variable "node_type_management" {
-  default = "PRO2-S"
+  default = "external"
 }
 variable "node_type_storage"   {
-  default = "PRO2-XXS"  
+  default = "external"  
 }
 
 variable "node_count" {
-  default = 3
+  default = 2
 }
 
 variable "volume_size" {
@@ -51,5 +51,15 @@ variable "tags" {
 variable "env" {
   type    = string
   default = "test"
+}
+
+variable "nodepools" {
+  type    = list(string)
+  default =  ["management","storage"]
+}
+variable "node_tags" {
+  type = list(list(string))
+  default = [ [ "nodetype=management" ], ["nodetype=storage", "taint=node=storage:NoSchedule"] ]
+  
 }
 # scaleway.auto.tfvars
