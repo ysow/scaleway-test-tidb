@@ -3,3 +3,4 @@
 .terraform.*
 kubeconfig.yaml
 *.tfstate.*
+secret*

@@ -1,7 +1,31 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tidb-cluster
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tidb-secret
+  namespace: tidb-cluster
+stringData:
+  root: "ChangeMe123!"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tidb-grafana
+  namespace: tidb-cluster
+stringData:
+  grafana-user: "monit"
+  grafana-pass: "ChangeMe123!"
+---
+
 apiVersion: pingcap.com/v1alpha1
 kind: TidbCluster
 metadata:
-  name: tidb-cluster
+  name: tidb
   namespace: tidb-cluster
 
 spec:
@@ -917,89 +941,180 @@ spec:
 
   ## TiFlash is the columnar storage extension of TiKV
   ## Ref: https://docs.pingcap.com/tidb-in-kubernetes/stable/deploy-tiflash/
-  # tiflash:
-  #   ###############################
-  #   # Basic TiFlash Configuration #
-  #   ###############################
-  #   baseImage: pingcap/tiflash
-  #   version: "v8.1.0"
-  #   replicas: 1
-  #   # limits:
-  #   #   cpu: 2000m
-  #   #   memory: 2Gi
-  #   imagePullPolicy: IfNotPresent
-  #   imagePullSecrets:
-  #   - name: secretName
+  tiflash:
+    ###############################
+    # Basic TiFlash Configuration #
+    ###############################
+    baseImage: pingcap/tiflash
+    version: "v8.1.0"
+    replicas: 1
+    # limits:
+    #   cpu: 2000m
+    #   memory: 2Gi
+    imagePullPolicy: IfNotPresent
+    # imagePullSecrets:
+    # - name: secretName
 
-  #   ##################################
-  #   # Advanced TiFlash Configuration #
-  #   ##################################
-  #   maxFailoverCount: 0
-  #   hostNetwork: false
-  #   serviceAccount: advanced-tidb-tiflash
-  #   priorityClassName: system-cluster-critical
-  #   schedulerName: default-scheduler
-  #   nodeSelector:
-  #     app.kubernetes.io/component: tiflash
-  #   annotations:
-  #     node.kubernetes.io/instance-type: some-vm-type
-  #   tolerations: {}
-  #   configUpdateStrategy: RollingUpdate
-  #   statefulSetUpdateStrategy: RollingUpdate
-  #   podSecurityContext: {}
-  #   env: []
-  #   additionalContainers: []
-  #   additionalVolumes: []
-  #   additionalVolumeMounts: []
-  #   terminationGracePeriodSeconds: 30
-  #   storageClaims:
-  #     - resources:
-  #         requests:
-  #           # specify PVC storage used for TiFlash
-  #           storage: 1Gi
-  #       # specify PVC storage class
-  #       storageClassName: local-storage
-  #   # run TiFlash container in privileged mode
-  #   # Processes in privileged containers are essentially equivalent to root on the host
-  #   # NOT RECOMMENDED in production environment
-  #   # Ref: https://kubernetes.io/docs/concepts/policy/pod-security-policy/#privileged
-  #   privileged: false
+    ##################################
+    # Advanced TiFlash Configuration #
+    ##################################
+    # maxFailoverCount: 0
+    # hostNetwork: false
+    # serviceAccount: tidb-tiflash
+    # priorityClassName: system-cluster-critical
+    # schedulerName: default-scheduler
+    # nodeSelector:
+    #   app.kubernetes.io/component: tiflash
+    # annotations:
+    #   node.kubernetes.io/instance-type: some-vm-type
+    # # tolerations: {}
+    # configUpdateStrategy: RollingUpdate
+    # statefulSetUpdateStrategy: RollingUpdate
+    # podSecurityContext: {}
+    # env: []
+    # additionalContainers: []
+    # additionalVolumes: []
+    # additionalVolumeMounts: []
+    # terminationGracePeriodSeconds: 30
+    storageClaims:
+      - resources:
+          requests:
+            # specify PVC storage used for TiFlash
+            storage: 1Gi
+    #     # specify PVC storage class
+        storageClassName: local-storage
+    # # run TiFlash container in privileged mode
+    # # Processes in privileged containers are essentially equivalent to root on the host
+    # # NOT RECOMMENDED in production environment
+    # # Ref: https://kubernetes.io/docs/concepts/policy/pod-security-policy/#privileged
+    # privileged: false
 
-  #   # if set to true, TiDB Operator will recover newly created TiFlash pods due to automatic failover
-  #   recoverFailover: true
+    # # if set to true, TiDB Operator will recover newly created TiFlash pods due to automatic failover
+    # recoverFailover: true
 
-  #   # configures serverlog/errorlog/clusterlog sidecar container resource requirements
-  #   # logTailer:
-  #   #   requests:
-  #   #     cpu: 1000m
-  #   #     memory: 1Gi
-  #   #   limits:
-  #   #     cpu: 2000m
-  #   #     memory: 2Gi
-  #   # configures init container resource requirements
-  #   initializer:
-  #     requests:
-  #       cpu: 1000m
-  #       memory: 1Gi
-  #     limits:
-  #       cpu: 2000m
-  #       memory: 2Gi
+    # # configures serverlog/errorlog/clusterlog sidecar container resource requirements
+    # # logTailer:
+    # #   requests:
+    # #     cpu: 1000m
+    # #     memory: 1Gi
+    # #   limits:
+    # #     cpu: 2000m
+    # #     memory: 2Gi
+    # # configures init container resource requirements
+    # initializer:
+    #   requests:
+    #     cpu: 1000m
+    #     memory: 1Gi
+    #   limits:
+    #     cpu: 2000m
+    #     memory: 2Gi
 
-  #   # TOML format configuration
-  #   # Ref: https://docs.pingcap.com/tidb/dev/tiflash-configuration
-  #   config:
-  #     # configure the configuration file for TiFlash process
-  #     config: |
-  #       [logger]
-  #         log = "/data0/logs/somelog"
-  #     # configure the configuration file for TiFlash Proxy process
-  #     proxy: |
-  #       [security]
-  #         cert-allowed-cn = "CNNAME"
-  #   # TopologySpreadConstraints for pod scheduling, will overwrite the cluster level spread constraints setting
-  #   # Ref: pkg/apis/pingcap/v1alpha1/types.go#TopologySpreadConstraint
-  #   topologySpreadConstraints:
-  #   - topologyKey: topology.kubernetes.io/zone
-  #     maxSkew: 1
-  #     minDomains: 3
-  #     nodeAffinityPolicy: Honor
+    # # TOML format configuration
+    # # Ref: https://docs.pingcap.com/tidb/dev/tiflash-configuration
+    # config:
+    #   # configure the configuration file for TiFlash process
+    #   config: |
+    #     [logger]
+    #       log = "/data0/logs/somelog"
+    #   # configure the configuration file for TiFlash Proxy process
+    #   proxy: |
+    #     [security]
+    #       cert-allowed-cn = "CNNAME"
+    # # TopologySpreadConstraints for pod scheduling, will overwrite the cluster level spread constraints setting
+    # # Ref: pkg/apis/pingcap/v1alpha1/types.go#TopologySpreadConstraint
+    # topologySpreadConstraints:
+    # - topologyKey: topology.kubernetes.io/zone
+    #   maxSkew: 1
+    #   minDomains: 3
+    #   nodeAffinityPolicy: Honor
+
+---
+
+apiVersion: pingcap.com/v1alpha1
+kind: TidbDashboard
+metadata:
+  name: tidb
+  namespace: tidb-cluster
+spec:
+  baseImage: pingcap/tidb-dashboard
+  version: latest
+  clusters:
+  - name: tidb
+  service:
+    type: LoadBalancer
+  requests:
+    cpu: 1000m
+    memory: 1Gi
+    storage: 10Gi
+  limits:
+    memory: 2Gi
+---
+apiVersion: pingcap.com/v1alpha1
+kind: TidbMonitor
+metadata:
+  name: tidb
+  namespace: tidb-cluster
+spec:
+  replicas: 1
+  pvReclaimPolicy: Retain
+  persistent: true
+  storage: 20G
+  clusters:
+  - name: tidb
+  prometheus:
+    baseImage: prom/prometheus
+    version: v2.27.1
+  grafana:
+    baseImage: grafana/grafana
+    version: 7.5.11
+    service:
+      type: LoadBalancer
+    usernameSecret:
+      name: tidb-grafana
+      key: grafana-user
+    passwordSecret:
+      name: tidb-grafana
+      key: grafana-pass
+  initializer:
+    baseImage: pingcap/tidb-monitor-initializer
+    version: v8.1.0
+  reloader:
+    baseImage: pingcap/tidb-monitor-reloader
+    version: v1.0.1
+  prometheusReloader:
+    baseImage: quay.io/prometheus-operator/prometheus-config-reloader
+    version: v0.49.0
+  imagePullPolicy: IfNotPresent
+---
+apiVersion: pingcap.com/v1alpha1
+kind: TidbNGMonitoring
+metadata:
+  name: tidb
+  namespace: tidb-cluster
+spec:
+  clusters:
+  - name: tidb
+  ngMonitoring:
+    requests:
+      storage: 20Gi
+    version: v8.1.0
+    baseImage: pingcap/ng-monitoring
+---
+apiVersion: pingcap.com/v1alpha1
+kind: TidbInitializer
+metadata:
+  name: tidb
+  namespace: tidb-cluster
+spec:
+  image: tnir/mysqlclient
+  imagePullPolicy: IfNotPresent
+  cluster:
+    name: tidb
+  passwordSecret: tidb-secret
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 500Mi
+    requests:
+      cpu: 100m
+      memory: 50Mi

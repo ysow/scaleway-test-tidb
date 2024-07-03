@@ -21,5 +21,5 @@ kubectl get po -n tidb-admin -l app.kubernetes.io/name=tidb-operator
 # mkdir -p ${PWD}/tidb-cluster && \
 # wget https://raw.githubusercontent.com/pingcap/tidb-operator/v1.6.0/examples/advanced/tidb-cluster.yaml 
 
-kubectl create namespace tidb-cluster
+# kubectl create namespace tidb-cluster
 

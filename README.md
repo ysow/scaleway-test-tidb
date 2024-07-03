@@ -98,6 +98,38 @@ Threads fairness:
     execution time (avg/stddev):   299.9285/0.01
 ```
 
+
+with 2 EM :
+
+````
+SQL statistics:
+    queries performed:
+        read:                            0
+        write:                           216428
+        other:                           0
+        total:                           216428
+    transactions:                        216428 (721.38 per sec.)
+    queries:                             216428 (721.38 per sec.)
+    ignored errors:                      0      (0.00 per sec.)
+    reconnects:                          0      (0.00 per sec.)
+
+General statistics:
+    total time:                          300.0189s
+    total number of events:              216428
+
+Latency (ms):
+         min:                                    4.14
+         avg:                                   22.17
+         max:                                  148.27
+         95th percentile:                       34.33
+         sum:                              4798982.06
+
+Threads fairness:
+    events (avg/stddev):           13526.7500/9.28
+    execution time (avg/stddev):   299.9364/0.01
+
+````
+
 TODO
 ----
 

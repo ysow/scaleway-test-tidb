@@ -21,6 +21,230 @@ stringData:
   grafana-user: "monit"
   grafana-pass: "ChangeMe123!"
 ---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pv-1
+spec:
+  capacity:
+    storage: 300Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/pd-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: k8s.scaleway.com/nodetype
+              operator: In
+              values:
+                - management
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pv-2
+spec:
+  capacity:
+    storage: 200Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/tikv-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: k8s.scaleway.com/nodetype
+              operator: In
+              values:
+                - storage
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pv-3
+spec:
+  capacity:
+    storage: 200Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/tiflash-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: k8s.scaleway.com/nodetype
+              operator: In
+              values:
+                - storage
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pv-4
+spec:
+  capacity:
+    storage: 100Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/tidb-dashboard
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: k8s.scaleway.com/nodetype
+              operator: In
+              values:
+                - management
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pv-5
+spec:
+  capacity:
+    storage: 100Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/tidb-monitor-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: k8s.scaleway.com/nodetype
+              operator: In
+              values:
+                - management                
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pv-6
+spec:
+  capacity:
+    storage: 100Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/additional-1
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: k8s.scaleway.com/nodetype
+              operator: In
+              values:
+                - management
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pv-7
+spec:
+  capacity:
+    storage: 100Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/ng-monitoring-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: k8s.scaleway.com/nodetype
+              operator: In
+              values:
+                - management
+                
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pv-8
+spec:
+  capacity:
+    storage: 100Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/additional-1
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: k8s.scaleway.com/nodetype
+              operator: In
+              values:
+                - storage              
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pv-9
+spec:
+  capacity:
+    storage: 300Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/additional-3
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: k8s.scaleway.com/nodetype
+              operator: In
+              values:
+                - storage
+---
 apiVersion: pingcap.com/v1alpha1
 kind: TidbCluster
 metadata:
@@ -38,7 +262,7 @@ spec:
   pd:
     baseImage: pingcap/pd
     maxFailoverCount: 0
-    replicas: 3
+    replicas: 1
     requests:
       cpu: 1000m
       memory: 1Gi
@@ -49,42 +273,42 @@ spec:
       [replication]
         enable-placement-rules = true
     affinity:
-      podAntiAffinity:
+      nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app.kubernetes.io/component
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: k8s.scaleway.com/nodetype
               operator: In
               values:
-              - pd
-          topologyKey: kubernetes.io/hostname
+              - management
+    storageClassName: local-storage
   tikv:
     baseImage: pingcap/tikv
     maxFailoverCount: 0
     evictLeaderTimeout: 1m
-    replicas: 3
+    replicas: 1
     config: |
       log-level = "info"
-    storageClassName: sbs-15k
+    storageClassName: local-storage
     affinity:
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
           - matchExpressions:
-            - key: k8s.scaleway.com/pool-name
+            - key: k8s.scaleway.com/nodetype
               operator: In
               values:
               - storage
-      podAntiAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app.kubernetes.io/component
-              operator: In
-              values:
-              - tikv
-              - tiflash
-          topologyKey: kubernetes.io/hostname
+      # podAntiAffinity:
+      #   requiredDuringSchedulingIgnoredDuringExecution:
+      #   - labelSelector:
+      #       matchExpressions:
+      #       - key: app.kubernetes.io/component
+      #         operator: In
+      #         values:
+      #         - tikv
+      #         - tiflash
+      #     topologyKey: kubernetes.io/hostname
     tolerations:
     - key: "k8s.scaleway.com/node"
       operator: "Equal"
@@ -95,31 +319,31 @@ spec:
   tiflash:
     baseImage: pingcap/tiflash
     maxFailoverCount: 0
-    replicas: 2
+    replicas: 1
     storageClaims:
     - resources:
         requests:
           storage: 100Gi
-      storageClassName: sbs-15k
+      storageClassName: local-storage
     affinity:
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
           - matchExpressions:
-            - key: k8s.scaleway.com/pool-name
+            - key: k8s.scaleway.com/nodetype
               operator: In
               values:
               - storage
-      podAntiAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app.kubernetes.io/component
-              operator: In
-              values:
-              - tiflash
-              - tikv
-          topologyKey: kubernetes.io/hostname
+      # podAntiAffinity:
+      #   requiredDuringSchedulingIgnoredDuringExecution:
+      #   - labelSelector:
+      #       matchExpressions:
+      #       - key: app.kubernetes.io/component
+      #         operator: In
+      #         values:
+      #         - tiflash
+      #         - tikv
+          # topologyKey: kubernetes.io/hostname
     tolerations:
     - key: "k8s.scaleway.com/node"
       operator: "Equal"
@@ -132,7 +356,7 @@ spec:
         tcp-keep-alive = true
     imagePullPolicy: IfNotPresent
     maxFailoverCount: 0
-    replicas: 2
+    replicas: 1
     separateSlowLog: true
     service:
       annotations:
@@ -153,18 +377,27 @@ spec:
         cpu: 20m
         memory: 5Mi
     affinity:
-      podAntiAffinity:
+      nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app.kubernetes.io/component
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: k8s.scaleway.com/nodetype
               operator: In
               values:
-              - tidb
-          topologyKey: kubernetes.io/hostname
+              - management
+      # podAntiAffinity:
+      #   requiredDuringSchedulingIgnoredDuringExecution:
+      #   - labelSelector:
+      #       matchExpressions:
+      #       - key: app.kubernetes.io/component
+      #         operator: In
+      #         values:
+      #         - tiflash
+      #         - tikv
+          # topologyKey: kubernetes.io/hostname
   ticdc:
     baseImage: pingcap/ticdc
-    replicas: 2
+    replicas: 1
     imagePullPolicy: IfNotPresent
     config: |
       gc-ttl = 86400
@@ -176,15 +409,24 @@ spec:
     limits:
       memory: 2Gi
     affinity:
-      podAntiAffinity:
+      nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app.kubernetes.io/component
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: k8s.scaleway.com/nodetype
               operator: In
               values:
-              - ticdc
-          topologyKey: kubernetes.io/hostname
+              - management
+      # podAntiAffinity:
+      #   requiredDuringSchedulingIgnoredDuringExecution:
+      #   - labelSelector:
+      #       matchExpressions:
+      #       - key: app.kubernetes.io/component
+      #         operator: In
+      #         values:
+      #         - tiflash
+      #         - tikv
+      # topologyKey: kubernetes.io/hostname
 ---
 apiVersion: pingcap.com/v1alpha1
 kind: TidbDashboard
